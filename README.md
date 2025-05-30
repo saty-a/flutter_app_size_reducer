@@ -164,7 +164,7 @@ If you encounter any issues or have questions, please [open an issue](https://gi
 
 # Changelog
 
-## 0.1.0
+## 1.0.2
 
 * Initial release
 * Added asset analysis functionality
