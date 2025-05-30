@@ -1,10 +1,12 @@
-name: Release
-
 on:
+  pull_request:
+    branches:
+      - dev
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
+name: "Build & Release"
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -38,5 +40,10 @@ jobs:
             LICENSE
             CHANGELOG.md
             README.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }} 
+
+      - name: Push to Releases
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v1.0.${{ github.run_number }}
+          token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
+
