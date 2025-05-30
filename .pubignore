@@ -1,0 +1,20 @@
+# IDE files
+.idea/
+.vscode/
+
+# Build files
+.dart_tool/
+build/
+*.iml
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store 
