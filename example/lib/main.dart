@@ -3,10 +3,13 @@ import 'package:flutter_app_size_reducer/flutter_app_size_reducer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize the package
   await FlutterAppSizeReducer.init();
-  
+  final results = await FlutterAppSizeReducer.analyze();
+  print('Unused assets: ${results['unusedAssets']}');
+  print('Large assets: ${results['largeAssets']}');
+
   runApp(const MyApp());
 }
 

@@ -75,9 +75,9 @@
     },
     {
       "name": "flutter_lints",
-      "rootUri": "file:///Users/dev/.pub-cache/hosted/pub.dev/flutter_lints-2.0.3",
+      "rootUri": "file:///Users/dev/.pub-cache/hosted/pub.dev/flutter_lints-3.0.2",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.1"
     },
     {
       "name": "flutter_test",
@@ -111,7 +111,7 @@
     },
     {
       "name": "lints",
-      "rootUri": "file:///Users/dev/.pub-cache/hosted/pub.dev/lints-2.1.1",
+      "rootUri": "file:///Users/dev/.pub-cache/hosted/pub.dev/lints-3.0.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -230,7 +230,7 @@
       "languageVersion": "3.0"
     }
   ],
-  "generated": "2025-05-30T22:33:10.815954Z",
+  "generated": "2025-05-30T22:55:15.432009Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///Users/dev/Downloads/flutter",

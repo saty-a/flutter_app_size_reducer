@@ -26,7 +26,7 @@ class OptimizeCommand extends BaseCommand {
   Future<void> execute([List<String> args = const []]) async {
     final dryRun = args.contains('--dry-run');
     final force = args.contains('--force');
-    
+
     // Parse quality parameter
     int quality = 85;
     for (final arg in args) {
@@ -42,14 +42,17 @@ class OptimizeCommand extends BaseCommand {
 
     final configFile = File('flutter_app_size_reducer.yaml');
     if (!await configFile.exists()) {
-      print('Configuration file not found. Please run "flutter_app_size_reducer init" first.');
+      print(
+          'Configuration file not found. Please run "flutter_app_size_reducer init" first.');
       return;
     }
 
     final config = loadYaml(await configFile.readAsString());
     final maxAssetSize = config['config']['max-asset-size'] as int;
-    final excludeExtensions = List<String>.from(config['config']['exclude-extensions'] ?? []);
-    final excludePaths = List<String>.from(config['config']['exclude-paths'] ?? []);
+    final excludeExtensions =
+        List<String>.from(config['config']['exclude-extensions'] ?? []);
+    final excludePaths =
+        List<String>.from(config['config']['exclude-paths'] ?? []);
 
     final assetsDir = Directory('assets');
     if (!await assetsDir.exists()) {
@@ -63,12 +66,13 @@ class OptimizeCommand extends BaseCommand {
     );
 
     final largeAssets = <String, int>{};
-    
+
     await for (final entity in assetsDir.list(recursive: true)) {
       if (entity is File) {
         final relativePath = path.relative(entity.path, from: '.');
-        final extension = path.extension(relativePath).toLowerCase().replaceAll('.', '');
-        
+        final extension =
+            path.extension(relativePath).toLowerCase().replaceAll('.', '');
+
         // Skip excluded extensions and paths
         if (excludeExtensions.contains(extension) ||
             excludePaths.any((path) => relativePath.startsWith(path))) {
@@ -79,7 +83,7 @@ class OptimizeCommand extends BaseCommand {
         if (size > maxAssetSize) {
           largeAssets[relativePath] = size;
         }
-        
+
         progress.increment();
       }
     }
@@ -114,12 +118,13 @@ class OptimizeCommand extends BaseCommand {
         final file = File(entry.key);
         final bytes = await file.readAsBytes();
         final image = img.decodeImage(bytes);
-        
+
         if (image != null) {
           final optimized = img.encodeJpg(image, quality: quality);
           if (optimized.length < bytes.length) {
             await file.writeAsBytes(optimized);
-            print('Optimized: ${entry.key} (${_formatSize(bytes.length)} -> ${_formatSize(optimized.length)})');
+            print(
+                'Optimized: ${entry.key} (${_formatSize(bytes.length)} -> ${_formatSize(optimized.length)})');
           } else {
             print('Skipped: ${entry.key} (optimization would increase size)');
           }
@@ -136,7 +141,8 @@ class OptimizeCommand extends BaseCommand {
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
@@ -185,4 +191,4 @@ class CliProgress {
   void dispose() {
     _updateTimer?.cancel();
   }
-} 
+}

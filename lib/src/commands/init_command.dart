@@ -17,9 +17,10 @@ class InitCommand extends BaseCommand {
   @override
   Future<void> execute([List<String> args = const []]) async {
     final configFile = File('flutter_app_size_reducer.yaml');
-    
+
     if (await configFile.exists()) {
-      print('Configuration file already exists. Do you want to overwrite it? (y/N)');
+      print(
+          'Configuration file already exists. Do you want to overwrite it? (y/N)');
       final response = stdin.readLineSync()?.toLowerCase();
       if (response != 'y') {
         print('Operation cancelled.');
@@ -46,7 +47,8 @@ class InitCommand extends BaseCommand {
       }
     };
 
-    await configFile.writeAsString(const JsonEncoder.withIndent('  ').convert(config));
+    await configFile
+        .writeAsString(const JsonEncoder.withIndent('  ').convert(config));
     print('Configuration file created successfully at ${configFile.path}');
   }
-} 
+}

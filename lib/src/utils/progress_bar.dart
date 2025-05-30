@@ -1,55 +1,34 @@
-import 'package:console_bars/console_bars.dart';
-import 'dart:async';
-import 'dart:io';
+// ignore_for_file: avoid_web_libraries_in_flutter
 
+import 'dart:io' if (dart.library.html) 'dart:html' as io;
+
+/// A progress bar utility for CLI applications.
 class CliProgress {
-  late final FillingBar _progressBar;
-  Timer? _updateTimer;
-  int _currentProgress = 0;
-  final int _totalSteps;
-  final Stopwatch _stopwatch = Stopwatch();
-  static const String _clearLine = '\x1B[2K\r'; // ANSI escape code to clear line
+  final String description;
+  final int totalSteps;
+  int _currentStep = 0;
+  static const String _clearLine = '\x1B[2K\r';
 
   CliProgress({
-    required String description,
-    required int totalSteps,
-  }) : _totalSteps = totalSteps {
-    _progressBar = FillingBar(
-      desc: description,
-      total: totalSteps,
-      time: true,
-      percentage: true,
-      fill: '=',
-      space: ' ',
-      scale: 0.5,
-    );
-    _stopwatch.start();
-  }
+    required this.description,
+    required this.totalSteps,
+  });
 
   void increment() {
-    _currentProgress++;
-    _progressBar.increment();
-    if (_currentProgress >= _totalSteps) {
-      dispose();
-    }
+    _currentStep++;
+    _updateProgress();
   }
 
-  void incrementBy(int steps) {
-    _currentProgress += steps;
-    for (var i = 0; i < steps; i++) {
-      _progressBar.increment();
-    }
-    if (_currentProgress >= _totalSteps) {
-      dispose();
-    }
+  void _updateProgress() {
+    final percentage = (_currentStep / totalSteps * 100).toStringAsFixed(1);
+    io.stdout.write('$description: $percentage% complete\r');
   }
 
   void clear() {
-    stdout.write(_clearLine); // Clear the current line using ANSI escape code
+    io.stdout.write(_clearLine);
   }
 
   void dispose() {
-    _stopwatch.stop();
-    _updateTimer?.cancel();
+    clear();
   }
 }

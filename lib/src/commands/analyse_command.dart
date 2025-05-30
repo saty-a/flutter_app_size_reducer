@@ -5,17 +5,25 @@ import 'package:yaml/yaml.dart';
 import 'base_command.dart';
 import 'clean_command.dart';
 
+/// A command that analyzes assets in a Flutter project to identify unused and large files.
+///
+/// This command scans the project's assets directory and checks for:
+/// - Unused assets that are not referenced in the code
+/// - Assets that exceed the maximum size specified in the configuration
 class AnalyseCommand extends BaseCommand {
+  /// List of unused asset paths found during analysis
   final List<String> unusedAssets = <String>[];
+
+  /// Map of large asset paths to their sizes in bytes
   final Map<String, int> largeAssets = <String, int>{};
   CliProgress? _progress;
-
 
   @override
   String get name => 'analyse';
 
   @override
-  String get description => 'Analyze assets and dependencies in your Flutter project';
+  String get description =>
+      'Analyze assets and dependencies in your Flutter project';
 
   @override
   String getOptions() {
@@ -25,12 +33,20 @@ class AnalyseCommand extends BaseCommand {
 ''';
   }
 
+  /// Executes the analysis command.
+  ///
+  /// This method:
+  /// 1. Checks for the configuration file
+  /// 2. Scans the assets directory
+  /// 3. Identifies unused and large assets
+  /// 4. Displays results and offers cleanup options
   @override
   Future<void> execute([List<String> args = const []]) async {
     try {
       final configFile = File('flutter_app_size_reducer.yaml');
       if (!await configFile.exists()) {
-        print('Configuration file not found. Please run "dart run flutter_app_size_reducer init" first.');
+        print(
+            'Configuration file not found. Please run "dart run flutter_app_size_reducer init" first.');
         return;
       }
 
@@ -48,8 +64,8 @@ class AnalyseCommand extends BaseCommand {
 
       // Count total files for progress bar
       int totalFiles = 0;
-      await for (final _ in assetsDir.list(recursive: true)) {
-        if (_ is File) totalFiles++;
+      await for (final entity in assetsDir.list(recursive: true)) {
+        if (entity is File) totalFiles++;
       }
 
       if (totalFiles == 0) {
@@ -67,25 +83,25 @@ class AnalyseCommand extends BaseCommand {
         if (entity is File) {
           final relativePath = path.relative(entity.path, from: '.');
           final size = await entity.length();
-          
+
           // Check if asset is used in code
           final isUsed = await _isAssetUsed(relativePath);
           if (!isUsed) {
             unusedAssets.add(relativePath);
           }
-          
+
           // Check if asset is larger than max size
           if (size > maxAssetSize) {
             largeAssets[relativePath] = size;
           }
-          
+
           _progress?.increment();
         }
       }
 
       _progress?.clear(); // Clear progress bar before showing results
       print('\n=== Analysis Results ===\n');
-      
+
       print('Unused Assets:');
       if (unusedAssets.isEmpty) {
         print('No unused assets found.');
@@ -102,7 +118,8 @@ class AnalyseCommand extends BaseCommand {
       } else {
         for (final entry in largeAssets.entries) {
           // Make the path clickable in the terminal
-          print('- file://${path.absolute(entry.key)} (${_formatSize(entry.value)})');
+          print(
+              '- file://${path.absolute(entry.key)} (${_formatSize(entry.value)})');
         }
       }
 
@@ -111,7 +128,7 @@ class AnalyseCommand extends BaseCommand {
         print('1. Clean unused assets');
         print('2. Exit');
         print(''); // Add a blank line for better readability
-        
+
         final choice = stdin.readLineSync();
         switch (choice) {
           case '1':
@@ -133,14 +150,14 @@ class AnalyseCommand extends BaseCommand {
 
     final assetName = path.basename(assetPath);
     final assetPathWithoutExt = path.withoutExtension(assetPath);
-    
+
     // Search in Dart files
     await for (final entity in libDir.list(recursive: true)) {
       if (entity is File && entity.path.endsWith('.dart')) {
         final content = await entity.readAsString();
-        
+
         // Check for direct asset references
-        if (content.contains("'$assetPath'") || 
+        if (content.contains("'$assetPath'") ||
             content.contains('"$assetPath"') ||
             content.contains("'$assetName'") ||
             content.contains('"$assetName"') ||
@@ -166,7 +183,8 @@ class AnalyseCommand extends BaseCommand {
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
@@ -176,4 +194,4 @@ class AnalyseCommand extends BaseCommand {
       'largeAssets': largeAssets,
     };
   }
-} 
+}

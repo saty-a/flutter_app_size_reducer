@@ -26,13 +26,16 @@ class CleanCommand extends BaseCommand {
 
     final configFile = File('flutter_app_size_reducer.yaml');
     if (!await configFile.exists()) {
-      print('Configuration file not found. Please run "flutter_app_size_reducer init" first.');
+      print(
+          'Configuration file not found. Please run "flutter_app_size_reducer init" first.');
       return;
     }
 
     final config = loadYaml(await configFile.readAsString());
-    final excludeExtensions = List<String>.from(config['config']['exclude-extensions'] ?? []);
-    final excludePaths = List<String>.from(config['config']['exclude-paths'] ?? []);
+    final excludeExtensions =
+        List<String>.from(config['config']['exclude-extensions'] ?? []);
+    final excludePaths =
+        List<String>.from(config['config']['exclude-paths'] ?? []);
 
     final assetsDir = Directory('assets');
     if (!await assetsDir.exists()) {
@@ -46,11 +49,11 @@ class CleanCommand extends BaseCommand {
     );
 
     final unusedAssets = <String>[];
-    
+
     await for (final entity in assetsDir.list(recursive: true)) {
       if (entity is File) {
         final relativePath = path.relative(entity.path, from: '.');
-        
+
         // Skip excluded extensions and paths
         if (excludeExtensions.any((ext) => relativePath.endsWith('.$ext')) ||
             excludePaths.any((path) => relativePath.startsWith(path))) {
@@ -62,7 +65,7 @@ class CleanCommand extends BaseCommand {
         if (!isUsed) {
           unusedAssets.add(relativePath);
         }
-        
+
         progress.increment();
       }
     }
@@ -109,14 +112,14 @@ class CleanCommand extends BaseCommand {
 
     final assetName = path.basename(assetPath);
     final assetPathWithoutExt = path.withoutExtension(assetPath);
-    
+
     // Search in Dart files
     await for (final entity in libDir.list(recursive: true)) {
       if (entity is File && entity.path.endsWith('.dart')) {
         final content = await entity.readAsString();
-        
+
         // Check for direct asset references
-        if (content.contains("'$assetPath'") || 
+        if (content.contains("'$assetPath'") ||
             content.contains('"$assetPath"') ||
             content.contains("'$assetName'") ||
             content.contains('"$assetName"') ||
@@ -138,4 +141,4 @@ class CleanCommand extends BaseCommand {
 
     return false;
   }
-} 
+}

@@ -73,4 +73,4 @@ Examples:
   flutter_app_size_reducer clean --dry-run
   flutter_app_size_reducer optimize --quality=80
 ''');
-} 
+}
