@@ -13,7 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   args: ^2.7.0
-  path: ^1.9.1
+  path: any
   yaml: ^3.1.2
   console_bars: ^1.2.0
   image: ^4.5.4
@@ -22,9 +22,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
-
-dependency_overrides:
-  path: ^1.9.0
 
 flutter:
   # This section is intentionally empty as this is a CLI tool
