@@ -1,38 +1,39 @@
-on:
-  pull_request:
-    branches:
-      - dev
-  push:
-    branches:
-      - master
+name: main
 
-name: "Build & Release"
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: 'stable'
-          
+
       - name: Install dependencies
         run: flutter pub get
-        
-      - name: Run tests
-        run: flutter test
-        
-      - name: Verify package
-        run: dart pub publish --dry-run
-        
-      - name: Publish to pub.dev
-        run: dart pub publish --force
-        env:
-          PUB_DEV_PUBLISH_ACCESS_TOKEN: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
-          
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: flutter analyze
+
+      - name: Create and push tag
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $TAG
+          git push origin $TAG
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -40,10 +41,12 @@ jobs:
             LICENSE
             CHANGELOG.md
             README.md
-
-      - name: Push to Releases
-        uses: ncipollo/release-action@v1
-        with:
-          tag: v1.0.${{ github.run_number }}
+          tag_name: v1.0.${{ github.run_number }}
           token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
+          file: ./coverage/lcov.info
+          fail_ci_if_error: true

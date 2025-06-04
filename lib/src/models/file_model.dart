@@ -1,6 +1,7 @@
 class UnusedAssetModel {
   String fileName;
   String filePath;
+
   UnusedAssetModel({
     required this.fileName,
     required this.filePath,
