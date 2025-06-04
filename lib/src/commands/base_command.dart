@@ -1,7 +1,10 @@
 abstract class BaseCommand {
   String get name;
+
   String get description;
+
   String getOptions();
+
   Future<void> execute([List<String> args = const []]);
 
   void printUsage() {

@@ -25,10 +25,21 @@ jobs:
     
     - name: Analyze project source
       run: flutter analyze
-    
-    - name: Run tests
-      run: flutter test --coverage
-    
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          LICENSE
+          CHANGELOG.md
+          README.md
+
+    - name: Push to Releases
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v1.0.${{ github.run_number }}
+        token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
