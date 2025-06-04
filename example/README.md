@@ -11,31 +11,6 @@ This example demonstrates how to use the `flutter_app_size_reducer` package in a
 - macOS
 - Linux
 
-## Running the Example
-
-1. Make sure you have Flutter installed and set up for all platforms you want to test.
-2. Run the following commands:
-
-```bash
-# For Android
-dart run flutter_app_size_reducer -d android
-
-# For iOS
-dart run flutter_app_size_reducer -d ios
-
-# For Web
-dart run flutter_app_size_reducer -d chrome
-
-# For Windows
-dart run flutter_app_size_reducer -d windows
-
-# For macOS
-dart run flutter_app_size_reducer -d macos
-
-# For Linux
-dart run flutter_app_size_reducer -d linux
-```
-
 ## Features Demonstrated
 
 - Asset analysis
