@@ -26,12 +26,11 @@ jobs:
     - name: Analyze project source
       run: flutter analyze
 
-    - name: Create and push tag
-        run:TAG="v1.0.${{ github.run_number }}"
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git tag $TAG
-        git push origin $TAG
+    - name: Push to Releases
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v1.0.${{ github.run_number }}
+        token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
@@ -40,12 +39,6 @@ jobs:
           LICENSE
           CHANGELOG.md
           README.md
-
-    - name: Push to Releases
-      uses: ncipollo/release-action@v1
-      with:
-        tag: v1.0.${{ github.run_number }}
-        token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
