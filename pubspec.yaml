@@ -1,6 +1,6 @@
 name: flutter_app_size_reducer
 description: A Flutter plugin for analyzing and reducing app size through CLI commands.
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/saty-a/flutter_app_size_reducer
 repository: https://github.com/saty-a/flutter_app_size_reducer
 issue_tracker: https://github.com/saty-a/flutter_app_size_reducer/issues
@@ -13,8 +13,8 @@ dependencies:
   flutter:
     sdk: flutter
   args: ^2.7.0
-  path: ^1.9.1
-  yaml: ^3.1.3
+  path: any
+  yaml: ^3.1.2
   console_bars: ^1.2.0
   image: ^4.5.4
 
@@ -24,7 +24,7 @@ dev_dependencies:
   flutter_lints: ^3.0.1
 
 flutter:
-  # This section is intentionally empty as this is a CLI tool
+# This section is intentionally empty as this is a CLI tool
 
 topics:
   - flutter
