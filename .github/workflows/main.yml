@@ -1,5 +1,8 @@
 name: main
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
@@ -12,6 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
@@ -33,20 +37,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $TAG
           git push origin $TAG
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            LICENSE
-            CHANGELOG.md
-            README.md
-          tag_name: v1.0.${{ github.run_number }}
-          token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.REPO_TOKEN_FLUTTER_PKG }}
-          file: ./coverage/lcov.info
-          fail_ci_if_error: true
