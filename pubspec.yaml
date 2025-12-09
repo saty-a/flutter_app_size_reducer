@@ -13,7 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   args: ^2.7.0
-  path: any
+  path: ^1.9.0
   yaml: ^3.1.2
   console_bars: ^1.2.0
   image: ^4.5.4

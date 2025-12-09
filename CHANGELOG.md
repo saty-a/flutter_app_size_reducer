@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.0.4
+
+* Added GIF support to the optimizer.
+* Added a new flag to the `analyse` command to export the report to a JSON file.
+
 ## 1.0.3
 
 * Improved error handling for corrupted or invalid image files during optimization.
@@ -24,7 +29,7 @@
 * Improved error messages when asset directories don't exist.
 * Updated example app with more comprehensive usage scenarios.
 
-## 1.0.0
+## 0.0.1
 
 * Initial stable release of flutter_app_size_reducer.
 * Added comprehensive asset analysis functionality to identify unused and large assets.

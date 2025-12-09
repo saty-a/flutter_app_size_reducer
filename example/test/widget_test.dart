@@ -6,7 +6,7 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_app_size_reducer_example/main.dart';
+import 'package:flutter_app_size_reducer_example/flutter_app_size_reducer_example.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
