@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:path/path.dart' as path;
-import 'package:yaml/yaml.dart';
-import 'package:image/image.dart' as img;
-import 'base_command.dart';
-import 'package:console_bars/console_bars.dart';
 import 'dart:async';
+import 'package:path/path.dart' as path;
+import 'package:image/image.dart' as img;
+import 'package:console_bars/console_bars.dart';
+import 'base_command.dart';
+import '../utils/config_loader.dart';
 
 class OptimizeCommand extends BaseCommand {
   @override
@@ -34,108 +34,114 @@ class OptimizeCommand extends BaseCommand {
         final qualityStr = arg.split('=')[1];
         quality = int.tryParse(qualityStr) ?? 85;
         if (quality < 1 || quality > 100) {
-          print('Invalid quality value. Using default: 85');
+          printWarning('Invalid quality value. Using default: 85');
           quality = 85;
         }
       }
     }
 
-    final configFile = File('flutter_app_size_reducer.yaml');
-    if (!await configFile.exists()) {
-      print(
-          'Configuration file not found. Please run "flutter_app_size_reducer init" first.');
-      return;
-    }
+    try {
+      // Load configuration
+      final config = await ConfigLoader.load();
+      final maxAssetSize = config.assets.maxAssetSize;
+      final excludeExtensions = config.assets.excludeExtensions;
+      final excludePaths = config.assets.excludePaths;
 
-    final config = loadYaml(await configFile.readAsString());
-    final maxAssetSize = config['config']['max-asset-size'] as int;
-    final excludeExtensions =
-        List<String>.from(config['config']['exclude-extensions'] ?? []);
-    final excludePaths =
-        List<String>.from(config['config']['exclude-paths'] ?? []);
-
-    final assetsDir = Directory('assets');
-    if (!await assetsDir.exists()) {
-      print('No assets directory found.');
-      return;
-    }
-
-    final progress = CliProgress(
-      description: 'Scanning assets',
-      totalSteps: 100,
-    );
-
-    final largeAssets = <String, int>{};
-
-    await for (final entity in assetsDir.list(recursive: true)) {
-      if (entity is File) {
-        final relativePath = path.relative(entity.path, from: '.');
-        final extension =
-            path.extension(relativePath).toLowerCase().replaceAll('.', '');
-
-        // Skip excluded extensions and paths
-        if (excludeExtensions.contains(extension) ||
-            excludePaths.any((path) => relativePath.startsWith(path))) {
-          continue;
-        }
-
-        final size = await entity.length();
-        if (size > maxAssetSize) {
-          largeAssets[relativePath] = size;
-        }
-
-        progress.increment();
-      }
-    }
-
-    if (largeAssets.isEmpty) {
-      print('\nNo large assets found.');
-      return;
-    }
-
-    print('\nFound ${largeAssets.length} large assets:');
-    for (final entry in largeAssets.entries) {
-      print('- ${entry.key} (${_formatSize(entry.value)})');
-    }
-
-    if (dryRun) {
-      print('\nThis was a dry run. No files were optimized.');
-      return;
-    }
-
-    if (!force) {
-      print('\nDo you want to optimize these files? (y/N)');
-      final response = stdin.readLineSync()?.toLowerCase();
-      if (response != 'y') {
-        print('Operation cancelled.');
+      final assetsDir = Directory('assets');
+      if (!await assetsDir.exists()) {
+        printWarning('No assets directory found.');
         return;
       }
-    }
 
-    print('\nOptimizing assets...');
-    for (final entry in largeAssets.entries) {
-      try {
-        final file = File(entry.key);
-        final bytes = await file.readAsBytes();
-        final image = img.decodeImage(bytes);
+      final progress = CliProgress(
+        description: 'Scanning assets',
+        totalSteps: 100,
+      );
 
-        if (image != null) {
-          final optimized = img.encodeJpg(image, quality: quality);
-          if (optimized.length < bytes.length) {
-            await file.writeAsBytes(optimized);
-            print(
-                'Optimized: ${entry.key} (${_formatSize(bytes.length)} -> ${_formatSize(optimized.length)})');
-          } else {
-            print('Skipped: ${entry.key} (optimization would increase size)');
+      final largeAssets = <String, int>{};
+
+      await for (final entity in assetsDir.list(recursive: true)) {
+        if (entity is File) {
+          final relativePath = path.relative(entity.path, from: '.');
+          final extension =
+              path.extension(relativePath).toLowerCase().replaceAll('.', '');
+
+          // Skip excluded extensions and paths
+          if (excludeExtensions.contains(extension) ||
+              excludePaths.any((path) => relativePath.startsWith(path))) {
+            continue;
           }
-        } else {
-          print('Skipped: ${entry.key} (not an image or unsupported format)');
+
+          final size = await entity.length();
+          if (size > maxAssetSize) {
+            largeAssets[relativePath] = size;
+          }
+
+          progress.increment();
         }
-      } catch (e) {
-        print('Error optimizing ${entry.key}: $e');
+      }
+
+      if (largeAssets.isEmpty) {
+        printInfo('\nNo large assets found.');
+        return;
+      }
+
+      printInfo('\nFound ${largeAssets.length} large assets:');
+      for (final entry in largeAssets.entries) {
+        logger.info('- ${entry.key} (${_formatSize(entry.value)})');
+      }
+
+      if (dryRun) {
+        printInfo('\nThis was a dry run. No files were optimized.');
+        return;
+      }
+
+      if (!force && stdout.hasTerminal) {
+        final shouldOptimize = await confirm(
+          'Do you want to optimize these files?',
+          defaultValue: false,
+        );
+        if (!shouldOptimize) {
+          printInfo('Operation cancelled.');
+          return;
+        }
+      }
+
+      printInfo('\nOptimizing assets...');
+      for (final entry in largeAssets.entries) {
+        try {
+          final file = File(entry.key);
+          final bytes = await file.readAsBytes();
+          final image = img.decodeImage(bytes);
+
+          if (image != null) {
+            final optimized = img.encodeJpg(image, quality: quality);
+            if (optimized.length < bytes.length) {
+              await file.writeAsBytes(optimized);
+              printSuccess(
+                  'Optimized: ${entry.key} (${_formatSize(bytes.length)} -> ${_formatSize(optimized.length)})');
+            } else {
+              printWarning(
+                  'Skipped: ${entry.key} (optimization would increase size)');
+            }
+          } else {
+            printWarning(
+                'Skipped: ${entry.key} (not an image or unsupported format)');
+          }
+        } catch (e) {
+          printError('Error optimizing ${entry.key}: $e');
+        }
+      }
+
+      printSuccess('\n✅ Optimization complete!');
+    } catch (e) {
+      if (e.toString().contains('not found')) {
+        printError(
+            'Configuration file not found. Please run "fasr init" first.');
+      } else {
+        printError('Error during optimization: $e');
       }
     }
-    print('\nOptimization completed.');
   }
 
   String _formatSize(int bytes) {
