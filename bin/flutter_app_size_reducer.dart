@@ -1,76 +1,176 @@
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:flutter_app_size_reducer/src/commands/optimize_command.dart';
+import 'package:mason_logger/mason_logger.dart';
 import 'package:flutter_app_size_reducer/flutter_app_size_reducer.dart';
+import 'package:flutter_app_size_reducer/src/commands/optimize_command.dart';
+
+const String version = '2.0.0';
 
 void main(List<String> arguments) async {
-  final parser = ArgParser()
-    ..addCommand('init')
-    ..addCommand('analyse')
-    ..addCommand('clean')
-    ..addCommand('optimize');
+  final logger = Logger();
+
+  final parser = ArgParser(allowTrailingOptions: false)
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      negatable: false,
+      help: 'Print this usage information.',
+    )
+    ..addFlag(
+      'version',
+      abbr: 'v',
+      negatable: false,
+      help: 'Print the version.',
+    )
+    ..addFlag(
+      'json',
+      negatable: false,
+      help: 'Output in JSON format.',
+    )
+    ..addFlag(
+      'color',
+      defaultsTo: true,
+      help: 'Enable colored output.',
+    )
+    ..addFlag(
+      'verbose',
+      negatable: false,
+      help: 'Enable verbose logging.',
+    );
 
   try {
-    final results = parser.parse(arguments);
-    final command = results.command;
+    // Find the command name first
+    String? commandName;
+    final commandArgs = <String>[];
 
-    if (command == null) {
-      _printUsage();
-      exit(1);
+    for (var i = 0; i < arguments.length; i++) {
+      final arg = arguments[i];
+      if (!arg.startsWith('-') && commandName == null) {
+        commandName = arg;
+      } else if (commandName != null) {
+        commandArgs.add(arg);
+      }
     }
 
-    if (command.name == 'help' || arguments.contains('--help')) {
-      _printUsage();
+    // Parse only the global options before the command
+    final globalArgs = arguments
+        .takeWhile((arg) => arg.startsWith('-') || arg == commandName)
+        .toList();
+    final results = parser.parse(globalArgs);
+
+    // Handle global flags
+    if (results['help'] as bool) {
+      _printUsage(logger);
       exit(0);
     }
 
-    switch (command.name) {
-      case 'init':
-        await InitCommand().execute(command.rest);
-        break;
-      case 'analyse':
-        await AnalyseCommand().execute(command.rest);
-        break;
-      case 'clean':
-        await CleanCommand().execute(command.rest);
-        break;
-      case 'optimize':
-        await OptimizeCommand().execute(command.rest);
-        break;
-      default:
-        print('Unknown command: ${command.name}');
-        _printUsage();
-        exit(1);
+    if (results['version'] as bool) {
+      logger.info('flutter_app_size_reducer version $version');
+      exit(0);
+    }
+
+    final jsonOutput = results['json'] as bool;
+    final useColors = results['color'] as bool;
+
+    if (commandName == null) {
+      _printUsage(logger);
+      exit(1);
+    }
+
+    // Execute the command with command-specific arguments
+    final commandInstance = _getCommand(commandName);
+    commandInstance.initLogger(jsonOutput: jsonOutput, useColors: useColors);
+
+    try {
+      await commandInstance.execute(commandArgs);
+      exit(0);
+    } catch (e, stackTrace) {
+      if (jsonOutput) {
+        logger.err('{"error": "${e.toString()}"}');
+      } else {
+        logger.err('Error: $e');
+        if (results['verbose'] as bool) {
+          logger.detail('Stack trace:\n$stackTrace');
+        }
+      }
+      exit(1);
     }
   } on ArgParserException catch (e) {
-    print('Error: ${e.message}');
-    _printUsage();
+    logger.err('Error: ${e.message}');
+    _printUsage(logger);
     exit(1);
   } catch (e) {
-    print('Error: $e');
+    logger.err('Error: $e');
     exit(1);
   }
 }
 
-void _printUsage() {
-  print('''
-Flutter App Size Reducer - A tool to analyze and reduce Flutter app size
+BaseCommand _getCommand(String name) {
+  switch (name) {
+    case 'init':
+      return InitCommand();
+    case 'analyse':
+    case 'analyze':
+      return AnalyseCommand();
+    case 'clean':
+      return CleanCommand();
+    case 'optimize':
+      return OptimizeCommand();
+    case 'doctor':
+      // TODO: Implement DoctorCommand
+      throw UnimplementedError('Doctor command coming soon!');
+    default:
+      throw ArgumentError('Unknown command: $name');
+  }
+}
 
-Usage:
+void _printUsage(Logger logger) {
+  logger.info('''
+${lightCyan.wrap('Flutter App Size Reducer')} - v$version
+A comprehensive Flutter development toolkit for app size optimization.
+
+${styleBold.wrap('Usage:')}
+  fasr <command> [arguments]
   flutter_app_size_reducer <command> [arguments]
 
-Available commands:
-  init     Initialize configuration file
-  analyse  Analyze assets and dependencies
-  clean    Clean unused assets
-  optimize Optimize large assets
+${styleBold.wrap('Global Options:')}
+  -h, --help       Print this usage information
+  -v, --version    Print the version
+  --json           Output in JSON format
+  --[no-]color     Enable colored output (defaults to on)
+  --verbose        Enable verbose logging
 
-Run 'flutter_app_size_reducer help <command>' for more information about a command.
+${styleBold.wrap('Available Commands:')}
 
-Examples:
-  flutter_app_size_reducer init
-  flutter_app_size_reducer analyse
-  flutter_app_size_reducer clean --dry-run
-  flutter_app_size_reducer optimize --quality=80
+  ${lightCyan.wrap('Analysis Commands:')}
+    analyse, analyze    Analyze assets, dependencies, and code
+    doctor              Health check and optimization recommendations
+
+  ${lightCyan.wrap('Cleanup Commands:')}
+    clean              Clean unused assets
+    optimize           Optimize large assets
+
+  ${lightCyan.wrap('Setup Commands:')}
+    init               Initialize configuration file
+
+${styleBold.wrap('Examples:')}
+  # Initialize configuration
+  fasr init
+
+  # Analyze your project
+  fasr analyse
+
+  # Analyze only dependencies
+  fasr analyse --type=dependencies
+
+  # Clean unused assets (dry run)
+  fasr clean --dry-run
+
+  # Optimize images with quality 80
+  fasr optimize --quality=80
+
+${styleDim.wrap('Run "fasr <command> --help" for more information about a command.')}
+
+${styleDim.wrap('💡 Tip: Install globally with:')} ${styleItalic.wrap('dart pub global activate flutter_app_size_reducer')}
 ''');
 }

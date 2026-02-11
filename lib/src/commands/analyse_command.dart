@@ -1,174 +1,171 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_app_size_reducer/src/utils/progress_bar.dart';
-import 'package:path/path.dart' as path;
-import 'package:yaml/yaml.dart';
 import 'base_command.dart';
-import 'clean_command.dart';
+import 'analyze_dependencies_command.dart';
 
-/// A command that analyzes assets in a Flutter project to identify unused and large files.
-///
-/// This command scans the project's assets directory and checks for:
-/// - Unused assets that are not referenced in the code
-/// - Assets that exceed the maximum size specified in the configuration
+/// Command to run various analyses on the Flutter project
 class AnalyseCommand extends BaseCommand {
-  /// List of unused asset paths found during analysis
-  final List<String> unusedAssets = <String>[];
-
-  /// Map of large asset paths to their sizes in bytes
-  final Map<String, int> largeAssets = <String, int>{};
-  CliProgress? _progress;
-
   @override
   String get name => 'analyse';
 
   @override
   String get description =>
-      'Analyze assets and dependencies in your Flutter project';
+      'Analyze assets, dependencies, and code in your Flutter project';
 
   @override
   String getOptions() {
     return '''
-  --type=<type>    Type of analysis (assets, dependencies, all)
-  --config=<path>  Path to configuration file
+  --type=<type>    Type of analysis (assets, dependencies, all) [default: all]
+  --json           Output in JSON format
+  --export=<path>  Export report to file (JSON format)
 ''';
   }
 
-  /// Executes the analysis command.
-  ///
-  /// This method:
-  /// 1. Checks for the configuration file
-  /// 2. Scans the assets directory
-  /// 3. Identifies unused and large assets
-  /// 4. Displays results and offers cleanup options
   @override
   Future<void> execute([List<String> args = const []]) async {
-    try {
-      final configFile = File('flutter_app_size_reducer.yaml');
-      if (!await configFile.exists()) {
-        print(
-            'Configuration file not found. Please run "dart run flutter_app_size_reducer init" first.');
-        return;
+    String analysisType = 'all';
+    String? exportPath;
+
+    // Parse arguments manually since they come as strings
+    for (final arg in args) {
+      if (arg.startsWith('--type=')) {
+        analysisType = arg.substring(7); // Remove '--type='
+      } else if (arg.startsWith('--export=')) {
+        exportPath = arg.substring(9); // Remove '--export='
       }
+    }
 
-      final config = loadYaml(await configFile.readAsString());
-      final maxAssetSize = config['config']['max-asset-size'] as int;
+    if (!['assets', 'dependencies', 'all'].contains(analysisType)) {
+      printError('Invalid analysis type: $analysisType');
+      printInfo('Valid types: assets, dependencies, all');
+      return;
+    }
 
-      print('Analyzing project assets...\n');
+    printInfo('🔍 Running Analysis...\n');
 
-      // Find all assets
-      final assetsDir = Directory('assets');
-      if (!await assetsDir.exists()) {
-        print('No assets directory found.');
-        return;
-      }
+    final results = <String, dynamic>{};
 
-      // Count total files for progress bar
-      int totalFiles = 0;
-      await for (final entity in assetsDir.list(recursive: true)) {
-        if (entity is File) totalFiles++;
-      }
+    // Run asset analysis
+    if (analysisType == 'assets' || analysisType == 'all') {
+      final assetResults = await _analyzeAssets();
+      results['assets'] = assetResults;
+    }
 
-      if (totalFiles == 0) {
-        print('No files found in assets directory.');
-        return;
-      }
+    // Run dependency analysis
+    if (analysisType == 'dependencies' || analysisType == 'all') {
+      final depCommand = AnalyzeDependenciesCommand();
+      depCommand.initLogger(jsonOutput: jsonOutput, useColors: useColors);
 
-      _progress = CliProgress(
-        description: 'Scanning assets',
-        totalSteps: totalFiles,
-      );
+      printInfo('\n');
+      await depCommand.execute(args);
+    }
 
-      // Analyze assets
-      await for (final entity in assetsDir.list(recursive: true)) {
-        if (entity is File) {
-          final relativePath = path.relative(entity.path, from: '.');
-          final size = await entity.length();
+    // Export if requested
+    if (exportPath != null) {
+      await _exportResults(results, exportPath);
+    }
 
-          // Check if asset is used in code
-          final isUsed = await _isAssetUsed(relativePath);
-          if (!isUsed) {
-            unusedAssets.add(relativePath);
-          }
+    if (!jsonOutput) {
+      printSuccess('\n✅ Analysis complete!');
+    }
+  }
 
-          // Check if asset is larger than max size
-          if (size > maxAssetSize) {
-            largeAssets[relativePath] = size;
-          }
+  Future<Map<String, dynamic>> _analyzeAssets() async {
+    printInfo('📦 Analyzing Assets...\n');
 
-          _progress?.increment();
+    final assetsDir = Directory('assets');
+    if (!await assetsDir.exists()) {
+      printWarning('No assets directory found.');
+      return {
+        'total': 0,
+        'unused': [],
+        'large': {},
+        'totalSize': 0,
+      };
+    }
+
+    final allAssets = <String>[];
+    final unusedAssets = <String>[];
+    final largeAssets = <String, int>{};
+    int totalSize = 0;
+    final maxAssetSize = 1048576; // 1MB default
+
+    final progress = createProgress('Scanning assets');
+
+    await for (final entity in assetsDir.list(recursive: true)) {
+      if (entity is File) {
+        final relativePath = entity.path;
+        final size = await entity.length();
+        totalSize += size;
+
+        allAssets.add(relativePath);
+
+        // Check if used
+        final isUsed = await _isAssetUsed(relativePath);
+        if (!isUsed) {
+          unusedAssets.add(relativePath);
+        }
+
+        // Check if large
+        if (size > maxAssetSize) {
+          largeAssets[relativePath] = size;
         }
       }
+    }
 
-      _progress?.clear(); // Clear progress bar before showing results
-      print('\n=== Analysis Results ===\n');
+    progress.complete('Found ${allAssets.length} assets');
 
-      print('Unused Assets:');
-      if (unusedAssets.isEmpty) {
-        print('No unused assets found.');
-      } else {
-        for (final asset in unusedAssets) {
-          // Make the path clickable in the terminal
-          print('- file://${path.absolute(asset)}');
-        }
-      }
-
-      print('\nLarge Assets (>${_formatSize(maxAssetSize)}):');
-      if (largeAssets.isEmpty) {
-        print('No large assets found.');
-      } else {
-        for (final entry in largeAssets.entries) {
-          // Make the path clickable in the terminal
-          print(
-              '- file://${path.absolute(entry.key)} (${_formatSize(entry.value)})');
-        }
-      }
+    if (!jsonOutput) {
+      printInfo('Total assets: ${allAssets.length}');
+      printInfo('Total size: ${_formatSize(totalSize)}');
 
       if (unusedAssets.isNotEmpty) {
-        print('\nWould you like to:');
-        print('1. Clean unused assets');
-        print('2. Exit');
-        print(''); // Add a blank line for better readability
+        printWarning('\n⚠️  Unused assets: ${unusedAssets.length}');
+        for (final asset in unusedAssets.take(5)) {
+          logger.info('  • $asset');
+        }
+        if (unusedAssets.length > 5) {
+          logger.info('  ... and ${unusedAssets.length - 5} more');
+        }
+      } else {
+        printSuccess('\n✓ No unused assets found!');
+      }
 
-        final choice = stdin.readLineSync();
-        switch (choice) {
-          case '1':
-            await CleanCommand().execute(unusedAssets);
-            break;
-          default:
-            print('Exiting...');
+      if (largeAssets.isNotEmpty) {
+        printWarning(
+            '\n⚠️  Large assets (>${_formatSize(maxAssetSize)}): ${largeAssets.length}');
+        for (final entry in largeAssets.entries.take(5)) {
+          logger.info('  • ${entry.key} (${_formatSize(entry.value)})');
+        }
+        if (largeAssets.length > 5) {
+          logger.info('  ... and ${largeAssets.length - 5} more');
         }
       }
-    } finally {
-      _progress?.dispose();
-      _progress = null;
     }
+
+    return {
+      'total': allAssets.length,
+      'unused': unusedAssets,
+      'large': largeAssets,
+      'totalSize': totalSize,
+    };
   }
 
   Future<bool> _isAssetUsed(String assetPath) async {
     final libDir = Directory('lib');
     if (!await libDir.exists()) return false;
 
-    final assetName = path.basename(assetPath);
-    final assetPathWithoutExt = path.withoutExtension(assetPath);
+    final assetName = assetPath.split('/').last;
 
-    // Search in Dart files
     await for (final entity in libDir.list(recursive: true)) {
       if (entity is File && entity.path.endsWith('.dart')) {
         final content = await entity.readAsString();
-
-        // Check for direct asset references
-        if (content.contains("'$assetPath'") ||
-            content.contains('"$assetPath"') ||
-            content.contains("'$assetName'") ||
-            content.contains('"$assetName"') ||
-            content.contains("'$assetPathWithoutExt'") ||
-            content.contains('"$assetPathWithoutExt"')) {
+        if (content.contains(assetPath) || content.contains(assetName)) {
           return true;
         }
       }
     }
 
-    // Check pubspec.yaml for asset declarations
     final pubspecFile = File('pubspec.yaml');
     if (await pubspecFile.exists()) {
       final content = await pubspecFile.readAsString();
@@ -181,22 +178,21 @@ class AnalyseCommand extends BaseCommand {
   }
 
   String _formatSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    }
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    }
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
     if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
-  Map<String, dynamic> getResults() {
-    return {
-      'unusedAssets': unusedAssets,
-      'largeAssets': largeAssets,
-    };
+  Future<void> _exportResults(Map<String, dynamic> results, String path) async {
+    try {
+      final file = File(path);
+      await file.writeAsString(json.encode(results));
+      printSuccess('Report exported to: $path');
+    } catch (e) {
+      printError('Failed to export report: $e');
+    }
   }
 }
