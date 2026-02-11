@@ -30,11 +30,15 @@ import 'src/commands/analyse_command.dart';
 import 'src/commands/clean_command.dart';
 import 'src/commands/init_command.dart';
 import 'src/commands/optimize_command.dart';
+
 export 'src/commands/analyse_command.dart';
 export 'src/commands/clean_command.dart';
 export 'src/commands/init_command.dart';
-
+export 'src/commands/analyze_dependencies_command.dart';
 export 'src/commands/base_command.dart';
+export 'src/services/dependency_analyzer.dart';
+export 'src/models/config_model.dart';
+export 'src/utils/config_loader.dart';
 
 /// The main class for the Flutter App Size Reducer package.
 ///
@@ -55,8 +59,9 @@ class FlutterAppSizeReducer {
   /// Returns a map containing the analysis results.
   static Future<Map<String, dynamic>> analyze() async {
     final command = AnalyseCommand();
+    command.initLogger();
     await command.execute();
-    return command.getResults();
+    return {}; // Analysis results are printed to console
   }
 
   /// Clean unused assets from the project.

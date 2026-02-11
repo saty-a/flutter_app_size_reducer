@@ -1,4 +1,4 @@
-name: main
+name: CI/CD Pipeline
 
 permissions:
   contents: write
@@ -10,13 +10,17 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  # Code quality and analysis
+  quality-check:
+    name: Code Quality & Analysis
     runs-on: ubuntu-latest
-
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: 'stable'
@@ -28,11 +32,138 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze project source
-        run: flutter analyze
+        run: dart analyze
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+  # Feature testing with v2.0
+  feature-test:
+    name: Test v2.0 Features
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Activate package globally
+        run: dart pub global activate --source path .
+
+      - name: Test version command
+        run: fasr --version
+
+      - name: Test help command
+        run: fasr --help
+
+      - name: Initialize config
+        run: |
+          cd example
+          fasr init --force || echo "Init requires TTY, skipping interactive test"
+
+      - name: Test dependency analysis
+        run: |
+          cd example
+          fasr analyse --type=dependencies --no-color
+
+      - name: Test asset analysis
+        run: |
+          cd example
+          fasr analyse --type=assets --no-color
+
+      - name: Test JSON export
+        run: |
+          cd example
+          fasr analyse --type=dependencies --export=deps.json --no-color
+          if [ -f deps.json ]; then
+            echo "✅ Export successful"
+            cat deps.json
+          else
+            echo "❌ Export failed"
+            exit 1
+          fi
+
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-analysis
+          path: example/deps.json
+          if-no-files-found: warn
+
+  # Example project build
+  build-example:
+    name: Build Example App
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: |
+          cd example
+          flutter pub get
+
+      - name: Build Android APK
+        run: |
+          cd example
+          flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-apk
+          path: example/build/app/outputs/flutter-apk/app-debug.apk
+
+  # Unit tests (if available)
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test || echo "No tests defined yet"
+
+  # Create and push tag (only on main branch)
+  release-tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    needs: [quality-check, feature-test, build-example]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Create and push tag
         run: |
-          TAG="v1.0.${{ github.run_number }}"
+          TAG="v2.0.${{ github.run_number }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $TAG

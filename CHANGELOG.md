@@ -1,5 +1,60 @@
 # CHANGELOG
 
+## 2.0.0 - Major Revamp 🎉
+
+This is a major release with significant new features and improvements!
+
+### 🚀 New Features
+
+- **Enhanced CLI Experience** - Beautiful colored output with `mason_logger`
+  - Interactive configuration prompts  
+  - Progress indicators for long-running operations
+  - Better error messages and help system
+  - Global flags: `--json`, `--version`, `--no-color`, `--verbose`
+
+- **Dependency Analysis** - NEW powerful dependency management
+  - Detect unused dependencies in `pubspec.yaml`
+  - Show package information from pub.dev
+  - Interactive cleanup prompts
+  - Support for both dependencies and dev_dependencies
+
+- **Improved Configuration System**
+  - Strongly-typed configuration model with JSON serialization
+  - Comprehensive sections for assets, dependencies, code, build, and reporting
+  - Automatic migration from v1 to v2 config format
+  - Interactive configuration setup during `init`
+
+- **Enhanced Analysis Command**
+  - Multiple analysis types: `--type=assets`, `--type=dependencies`, `--type=all`
+  - Export analysis results to JSON: `--export=report.json`
+  - Better formatted output with statistics
+
+### 🛠️ Improvements
+
+- Redesigned command structure with categorized help
+- Better progress indicators
+- More informative output
+- Improved error handling
+- Added command aliases (`analyze` for `analyse`)
+- **Added short command name `fasr`** for easier CLI usage
+- Support for global activation via `dart pub global activate`
+
+### ⚠️ Breaking Changes
+
+- Configuration file format changed from simple JSON to comprehensive YAML sections
+- `analyse` command API changed (added new parameters)
+- Programmatic API `analyze()` method signature changed
+
+### 📝 Migration Guide
+
+To migrate from v1.x to v2.0:
+
+1. **Backup your old config**: `cp flutter_app_size_reducer.yaml flutter_app_size_reducer.yaml.backup`
+2. **Re-initialize**: `dart run flutter_app_size_reducer init`
+3. **Or manually update** your config to the new format (see README for structure)
+
+The new configuration format provides much more control and new features!
+
 ## 1.0.4
 
 * Added GIF support to the optimizer.
