@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:path/path.dart' as path;
-import 'package:yaml/yaml.dart';
-import 'package:image/image.dart' as img;
-import 'base_command.dart';
-import 'package:console_bars/console_bars.dart';
 import 'dart:async';
+import 'package:path/path.dart' as path;
+import 'package:image/image.dart' as img;
+import 'package:console_bars/console_bars.dart';
+import 'base_command.dart';
+import '../utils/config_loader.dart';
 
 class OptimizeCommand extends BaseCommand {
   @override
@@ -40,25 +40,18 @@ class OptimizeCommand extends BaseCommand {
       }
     }
 
-    final configFile = File('flutter_app_size_reducer.yaml');
-    if (!await configFile.exists()) {
-      print(
-          'Configuration file not found. Please run "flutter_app_size_reducer init" first.');
-      return;
-    }
+    // Load configuration
+    try {
+      final config = await ConfigLoader.load();
+      final maxAssetSize = config.assets.maxAssetSize;
+      final excludeExtensions = config.assets.excludeExtensions;
+      final excludePaths = config.assets.excludePaths;
 
-    final config = loadYaml(await configFile.readAsString());
-    final maxAssetSize = config['config']['max-asset-size'] as int;
-    final excludeExtensions =
-        List<String>.from(config['config']['exclude-extensions'] ?? []);
-    final excludePaths =
-        List<String>.from(config['config']['exclude-paths'] ?? []);
-
-    final assetsDir = Directory('assets');
-    if (!await assetsDir.exists()) {
-      print('No assets directory found.');
-      return;
-    }
+      final assetsDir = Directory('assets');
+      if (!await assetsDir.exists()) {
+        printWarning('No assets directory found.');
+        return;
+      }
 
     final progress = CliProgress(
       description: 'Scanning assets',
