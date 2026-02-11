@@ -1,20 +1,9 @@
-# IDE files
+# Development and IDE files
 .idea/
-.vscode/
-
-# Build files
 .dart_tool/
-build/
-*.iml
 
-# Generated files
-*.g.dart
-*.freezed.dart
+# Lock file (not needed for packages)
+pubspec.lock
 
-# Test coverage
-coverage/
-
-# Temporary files
-*.log
-*.tmp
-.DS_Store 
+# Example project (documentation only, not executable)
+example/

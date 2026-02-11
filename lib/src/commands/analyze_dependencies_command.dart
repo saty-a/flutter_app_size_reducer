@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'base_command.dart';
 import '../services/dependency_analyzer.dart';
 
@@ -36,8 +37,8 @@ class AnalyzeDependenciesCommand extends BaseCommand {
         _printFormattedOutput(result, unusedOnly);
       }
 
-      // Offer to clean unused dependencies
-      if (result.hasUnused && !jsonOutput) {
+      // Offer to clean unused dependencies (only with TTY)
+      if (result.hasUnused && !jsonOutput && stdout.hasTerminal) {
         printInfo(
             '\n💡 Tip: You can remove unused dependencies to reduce app size.');
 
