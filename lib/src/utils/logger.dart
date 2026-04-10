@@ -53,7 +53,8 @@ class Logger {
       final marker = choices[i] == defaultValue ? '> ' : '  ';
       stdout.writeln('$marker${i + 1}. ${choices[i]}');
     }
-    final defaultIndex = defaultValue != null ? choices.indexOf(defaultValue) : -1;
+    final defaultIndex =
+        defaultValue != null ? choices.indexOf(defaultValue) : -1;
     while (true) {
       final hint = defaultIndex >= 0 ? ' [${defaultIndex + 1}]' : '';
       stdout.write('Enter choice$hint: ');
@@ -63,7 +64,8 @@ class Logger {
       if (index != null && index >= 1 && index <= choices.length) {
         return choices[index - 1];
       }
-      stdout.writeln('Invalid choice, please enter a number between 1 and ${choices.length}.');
+      stdout.writeln(
+          'Invalid choice, please enter a number between 1 and ${choices.length}.');
     }
   }
 

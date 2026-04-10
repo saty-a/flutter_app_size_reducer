@@ -5,5 +5,15 @@
 # Lock file (not needed for packages)
 pubspec.lock
 
-# Example project (documentation only, not executable)
-example/
+# Example — exclude generated/platform dirs, keep example/lib/
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/windows/
+example/web/
+example/test/
+example/.dart_tool/
+example/pubspec.lock
+example/assets/
+example/coverage/

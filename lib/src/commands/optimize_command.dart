@@ -152,4 +152,3 @@ class OptimizeCommand extends BaseCommand {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
-
