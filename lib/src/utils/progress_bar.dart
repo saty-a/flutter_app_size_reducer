@@ -1,6 +1,4 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
-
-import 'dart:io' if (dart.library.html) 'dart:html' as io;
+import 'dart:io';
 
 /// A progress bar utility for CLI applications.
 class CliProgress {
@@ -21,11 +19,11 @@ class CliProgress {
 
   void _updateProgress() {
     final percentage = (_currentStep / totalSteps * 100).toStringAsFixed(1);
-    io.stdout.write('$description: $percentage% complete\r');
+    stdout.write('$description: $percentage% complete\r');
   }
 
   void clear() {
-    io.stdout.write(_clearLine);
+    stdout.write(_clearLine);
   }
 
   void dispose() {

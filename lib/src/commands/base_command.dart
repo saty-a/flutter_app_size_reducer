@@ -1,4 +1,4 @@
-import 'package:mason_logger/mason_logger.dart';
+import '../utils/logger.dart';
 
 /// Base class for all commands in the flutter_app_size_reducer CLI.
 ///

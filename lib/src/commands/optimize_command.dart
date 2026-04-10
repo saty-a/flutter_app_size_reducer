@@ -1,10 +1,9 @@
 import 'dart:io';
-import 'dart:async';
 import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
-import 'package:console_bars/console_bars.dart';
 import 'base_command.dart';
 import '../utils/config_loader.dart';
+import '../utils/progress_bar.dart';
 
 class OptimizeCommand extends BaseCommand {
   @override
@@ -154,48 +153,3 @@ class OptimizeCommand extends BaseCommand {
   }
 }
 
-class CliProgress {
-  late final FillingBar _progressBar;
-  Timer? _updateTimer;
-  int _currentProgress = 0;
-  final int _totalSteps;
-
-  CliProgress({
-    required String description,
-    required int totalSteps,
-  }) : _totalSteps = totalSteps {
-    _progressBar = FillingBar(
-      desc: description,
-      total: totalSteps,
-      time: true,
-      percentage: true,
-      fill: '=',
-      space: ' ',
-      scale: 0.5,
-    );
-    _startUpdateTimer();
-  }
-
-  void _startUpdateTimer() {
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (_currentProgress < _totalSteps) {
-        _progressBar.increment();
-        _currentProgress++;
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  void increment() {
-    _currentProgress++;
-  }
-
-  void incrementBy(int steps) {
-    _currentProgress += steps;
-  }
-
-  void dispose() {
-    _updateTimer?.cancel();
-  }
-}
