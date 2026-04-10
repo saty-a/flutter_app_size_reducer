@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2.0.2
+
+- Replace `mason_logger` dependency with a lightweight custom logger to remove
+  transitive `win32` platform restriction
+- Remove unused dependencies: `analyzer`, `shelf`, `cli_util`
+- Update `lints` to `^6.0.0`, `image` to `^4.0.0`; upgrade all transitive
+  dependencies (removed discontinued `build_runner_core` / `build_resolvers`)
+- Fix broken conditional `dart:io` / `dart:html` import in `progress_bar.dart`
+- Stop tracking IDE and tool-generated files in git (`.dart_tool/`, `.idea/`,
+  `pubspec.lock`) — `.pubignore` already excludes them from the published package
+
 ## 2.0.0 - Major Revamp 🎉
 
 This is a major release with significant new features and improvements!

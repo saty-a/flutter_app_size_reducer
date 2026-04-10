@@ -1,10 +1,16 @@
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:mason_logger/mason_logger.dart';
 import 'package:flutter_app_size_reducer/flutter_app_size_reducer.dart';
 import 'package:flutter_app_size_reducer/src/commands/optimize_command.dart';
+import 'package:flutter_app_size_reducer/src/utils/logger.dart';
 
-const String version = '2.0.0';
+const String version = '2.0.2';
+
+// ANSI formatting helpers
+String _bold(String s) => '\x1B[1m$s\x1B[0m';
+String _cyan(String s) => '\x1B[96m$s\x1B[0m';
+String _dim(String s) => '\x1B[2m$s\x1B[0m';
+String _italic(String s) => '\x1B[3m$s\x1B[0m';
 
 void main(List<String> arguments) async {
   final logger = Logger();
@@ -90,7 +96,7 @@ void main(List<String> arguments) async {
       } else {
         logger.err('Error: $e');
         if (results['verbose'] as bool) {
-          logger.detail('Stack trace:\n$stackTrace');
+          logger.info('Stack trace:\n$stackTrace');
         }
       }
       exit(1);
@@ -126,34 +132,34 @@ BaseCommand _getCommand(String name) {
 
 void _printUsage(Logger logger) {
   logger.info('''
-${lightCyan.wrap('Flutter App Size Reducer')} - v$version
+${_cyan('Flutter App Size Reducer')} - v$version
 A comprehensive Flutter development toolkit for app size optimization.
 
-${styleBold.wrap('Usage:')}
+${_bold('Usage:')}
   fasr <command> [arguments]
   flutter_app_size_reducer <command> [arguments]
 
-${styleBold.wrap('Global Options:')}
+${_bold('Global Options:')}
   -h, --help       Print this usage information
   -v, --version    Print the version
   --json           Output in JSON format
   --[no-]color     Enable colored output (defaults to on)
   --verbose        Enable verbose logging
 
-${styleBold.wrap('Available Commands:')}
+${_bold('Available Commands:')}
 
-  ${lightCyan.wrap('Analysis Commands:')}
+  ${_cyan('Analysis Commands:')}
     analyse, analyze    Analyze assets, dependencies, and code
     doctor              Health check and optimization recommendations
 
-  ${lightCyan.wrap('Cleanup Commands:')}
+  ${_cyan('Cleanup Commands:')}
     clean              Clean unused assets
     optimize           Optimize large assets
 
-  ${lightCyan.wrap('Setup Commands:')}
+  ${_cyan('Setup Commands:')}
     init               Initialize configuration file
 
-${styleBold.wrap('Examples:')}
+${_bold('Examples:')}
   # Initialize configuration
   fasr init
 
@@ -169,8 +175,8 @@ ${styleBold.wrap('Examples:')}
   # Optimize images with quality 80
   fasr optimize --quality=80
 
-${styleDim.wrap('Run "fasr <command> --help" for more information about a command.')}
+${_dim('Run "fasr <command> --help" for more information about a command.')}
 
-${styleDim.wrap('💡 Tip: Install globally with:')} ${styleItalic.wrap('dart pub global activate flutter_app_size_reducer')}
+${_dim('💡 Tip: Install globally with:')} ${_italic('dart pub global activate flutter_app_size_reducer')}
 ''');
 }
